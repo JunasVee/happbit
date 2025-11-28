@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,76 +7,261 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load .env (must be added to flutter assets in pubspec.yaml)
+  await dotenv.load(fileName: '.env');
 
   final supabaseUrl = dotenv.env['SUPABASE_URL'];
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseAnonKey == null) {
-    throw Exception("Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env file.");
+    throw Exception('SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
   }
 
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HappBit',
+      title: 'HappBit (Dev)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Color.fromARGB(255, 123, 147, 255),
+          seedColor: const Color.fromARGB(255, 123, 147, 255),
         ),
       ),
-      home: const MyHomePage(title: 'HappBit'),
+      home: const HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   final SupabaseClient client = Supabase.instance.client;
-  bool loading = false;
+  late final StreamSubscription<AuthState> _authSub;
 
-  Future<void> generateDummyData() async {
-    setState(() => loading = true);
+  final TextEditingController _emailCtl = TextEditingController();
+  final TextEditingController _passCtl = TextEditingController();
+
+  bool _loading = false;
+  List<Map<String, dynamic>> _habits = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // listen to auth changes so UI refreshes automatically
+    _authSub = client.auth.onAuthStateChange.listen((event) {
+      if (mounted) {
+        setState(() {});
+        _loadHabitsIfSignedIn();
+      }
+    });
+
+    _loadHabitsIfSignedIn();
+  }
+
+  @override
+  void dispose() {
+    _authSub.cancel();
+    _emailCtl.dispose();
+    _passCtl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHabitsIfSignedIn() async {
+    final user = client.auth.currentUser;
+    if (user != null) {
+      await fetchHabits();
+    } else {
+      setState(() => _habits = []);
+    }
+  }
+
+  // ---------------------------
+  // AUTH: Improved signUp logic
+  // ---------------------------
+  Future<void> _signUp() async {
+    setState(() => _loading = true);
+    final email = _emailCtl.text.trim();
+    final password = _passCtl.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter email and password')));
+      setState(() => _loading = false);
+      return;
+    }
 
     try {
-      final user = client.auth.currentUser;
-      if (user == null) {
-        throw Exception("No user logged in. Please sign in first.");
+      debugPrint('Attempting signUp for $email');
+
+      // 1) Try sign up
+      final signUpRes = await client.auth.signUp(email: email, password: password);
+      debugPrint('signUpRes: user=${signUpRes.user}, session=${signUpRes.session}');
+
+      // If user returned immediately (email confirm disabled), create profile & finish
+      if (signUpRes.user != null) {
+        final user = signUpRes.user!;
+        await _ensureProfileExists(user.id);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign up successful and signed in.')));
+        await fetchHabits();
+        return;
       }
 
-      final uid = user.id;
+      // signUpRes.user == null -> likely email confirmation required OR server didn't create session.
+      // Try to sign in immediately (some Supabase projects allow direct sign-in).
+      try {
+        final signInRes = await client.auth.signInWithPassword(email: email, password: password);
+        debugPrint('signIn after signup attempt: user=${signInRes.user}, session=${signInRes.session}');
 
-      // 1️⃣ Upsert profile — V2: return value directly
+        if (signInRes.user != null) {
+          // signed in successfully
+          await _ensureProfileExists(signInRes.user!.id);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed in after sign up.')));
+          await fetchHabits();
+          return;
+        } else {
+          // not signed in; inform user to check email verification
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sign-up created. Please check your email to confirm your account.')),
+          );
+          return;
+        }
+      } catch (signInErr) {
+        // signIn failed (likely email confirmation required). Inform user clearly.
+        debugPrint('signIn after signUp failed: $signInErr');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-up created. Please check your email to confirm your account.')),
+        );
+        return;
+      }
+    } catch (e, st) {
+      debugPrint('Sign up error: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up error: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // ---------------------------
+  // SIGN IN
+  // ---------------------------
+  Future<void> _signIn() async {
+    setState(() => _loading = true);
+    final email = _emailCtl.text.trim();
+    final password = _passCtl.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter email and password')));
+      setState(() => _loading = false);
+      return;
+    }
+
+    try {
+      final res = await client.auth.signInWithPassword(email: email, password: password);
+      debugPrint('signIn res: user=${res.user}, session=${res.session}');
+      if (res.user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign-in did not return a user. Check email confirmation.')));
+      } else {
+        await _ensureProfileExists(res.user!.id);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed in successfully.')));
+        await fetchHabits();
+      }
+    } catch (e, st) {
+      debugPrint('Sign in error: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign in error: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _signOut() async {
+    await client.auth.signOut();
+    if (mounted) {
+      setState(() {
+        _habits = [];
+      });
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed out.')));
+  }
+
+  // Ensure profile exists (safe when RLS disabled; when enabled you need policies)
+  Future<void> _ensureProfileExists(String userId) async {
+    try {
       await client.from('profiles').upsert({
-        'id': uid,
+        'id': userId,
         'display_name': 'HappBit User',
         'timezone': 'Asia/Jakarta',
       });
+    } catch (e) {
+      // don't block user if this fails, just print for debugging
+      debugPrint('_ensureProfileExists error: $e');
+    }
+  }
 
-      // 2️⃣ Insert habits (must call .select())
+  // ---------------------------
+  // Data functions
+  // ---------------------------
+  Future<void> fetchHabits() async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final res = await client.from('habits').select().eq('user_id', user.id).order('created_at', ascending: false);
+      if (res == null) {
+        setState(() => _habits = []);
+      } else {
+        final list = List<Map<String, dynamic>>.from(res as List<dynamic>);
+        setState(() => _habits = list);
+      }
+    } catch (e) {
+      debugPrint('fetchHabits error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading habits: $e')));
+    }
+  }
+
+  Future<void> markHabitDone(String habitId) async {
+    final user = client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not signed in')));
+      return;
+    }
+    try {
+      await client.from('habit_instances').insert({
+        'habit_id': habitId,
+        'user_id': user.id,
+        'occured_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked done')));
+      await fetchHabits();
+    } catch (e) {
+      debugPrint('markHabitDone error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error marking done: $e')));
+    }
+  }
+
+  Future<void> _generateDummyData() async {
+    setState(() => _loading = true);
+    final user = client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in first to seed data')));
+      setState(() => _loading = false);
+      return;
+    }
+    try {
+      await _ensureProfileExists(user.id);
+
       final habits = await client.from('habits').insert([
         {
-          'user_id': uid,
+          'user_id': user.id,
           'title': 'Drink Water',
           'description': 'Stay hydrated.',
           'icon': 'water',
@@ -84,7 +270,7 @@ class _MyHomePageState extends State<MyHomePage> {
           'goal': 8,
         },
         {
-          'user_id': uid,
+          'user_id': user.id,
           'title': 'Meditate',
           'description': 'Calm your mind.',
           'icon': 'meditation',
@@ -92,117 +278,127 @@ class _MyHomePageState extends State<MyHomePage> {
           'frequency': {'type': 'daily'},
           'goal': 1,
         },
-        {
-          'user_id': uid,
-          'title': 'Workout',
-          'description': 'Gym or home workout.',
-          'icon': 'dumbbell',
-          'color': '#9575CD',
-          'frequency': {
-            'type': 'weekly',
-            'days': [1, 3, 5],
-          },
-          'goal': 1,
-        },
       ]).select();
 
-      final drinkWaterId = habits[0]['id'] as String;
-      final meditateId = habits[1]['id'] as String;
-      final workoutId = habits[2]['id'] as String;
+      if (habits != null && (habits as List).isNotEmpty) {
+        final firstId = habits[0]['id'] as String;
+        await client.from('habit_instances').insert([
+          {
+            'habit_id': firstId,
+            'user_id': user.id,
+            'occured_at': DateTime.now().toUtc().toIso8601String(),
+          }
+        ]);
+        await client.from('reminders').insert([
+          {
+            'habit_id': firstId,
+            'user_id': user.id,
+            'time': '08:00:00',
+            'enabled': true,
+          }
+        ]);
+      }
 
-      // 3️⃣ Insert habit_instances
-      await client.from('habit_instances').insert([
-        {
-          'habit_id': drinkWaterId,
-          'user_id': uid,
-          'occured_at': DateTime.now()
-              .toUtc()
-              .subtract(const Duration(hours: 2))
-              .toIso8601String(),
-        },
-        {
-          'habit_id': drinkWaterId,
-          'user_id': uid,
-          'occured_at': DateTime.now()
-              .toUtc()
-              .subtract(const Duration(hours: 4))
-              .toIso8601String(),
-        },
-        {
-          'habit_id': meditateId,
-          'user_id': uid,
-          'occured_at': DateTime.now()
-              .toUtc()
-              .subtract(const Duration(hours: 1))
-              .toIso8601String(),
-        },
-      ]);
-
-      // 4️⃣ Insert reminders
-      await client.from('reminders').insert([
-        {
-          'habit_id': drinkWaterId,
-          'user_id': uid,
-          'time': '08:00:00',
-          'enabled': true,
-        },
-        {
-          'habit_id': meditateId,
-          'user_id': uid,
-          'time': '07:30:00',
-          'enabled': true,
-          'repeat': {
-            'mon': true,
-            'tue': true,
-            'wed': true,
-            'thu': true,
-            'fri': true,
-          },
-        },
-        {
-          'habit_id': workoutId,
-          'user_id': uid,
-          'time': '18:00:00',
-          'enabled': true,
-          'repeat': {'mon': true, 'wed': true, 'fri': true},
-        },
-      ]);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Dummy data generated successfully!")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dummy data generated.')));
+      await fetchHabits();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      debugPrint('seed error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating dummy data: $e')));
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
+  // ---------------------------
+  // UI
+  // ---------------------------
   @override
   Widget build(BuildContext context) {
-    final userId = client.auth.currentUser?.id ?? "(not signed in)";
+    final user = client.auth.currentUser;
+    final userId = user?.id ?? '(not signed in)';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text('HappBit - Dev'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(
           children: [
-            Text("Logged-in user: $userId"),
-            const SizedBox(height: 20),
+            Text('Logged-in user: $userId'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _emailCtl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _passCtl,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _loading ? null : _signUp,
+                  child: _loading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Sign Up'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _loading ? null : _signIn,
+                  child: const Text('Sign In'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _loading ? null : _signOut,
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: loading ? null : generateDummyData,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Generate Dummy Data"),
+              onPressed: _loading ? null : _generateDummyData,
+              child: _loading ? const CircularProgressIndicator() : const Text('Generate Dummy Data'),
+            ),
+            const SizedBox(height: 16),
+            const Text('Your habits:'),
+            const SizedBox(height: 8),
+            _habits.isEmpty
+                ? const Text('(no habits yet)')
+                : Column(
+                    children: _habits.map((h) {
+                      final title = h['title'] ?? 'Untitled';
+                      final id = h['id'] as String;
+                      final desc = h['description'] ?? '';
+                      final goal = h['goal'] ?? 1;
+                      return Card(
+                        child: ListTile(
+                          title: Text(title),
+                          subtitle: Text(desc.toString()),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Goal: $goal'),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.check_circle),
+                                onPressed: () => markHabitDone(id),
+                                tooltip: 'Mark done',
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+            const SizedBox(height: 24),
+            const Text(
+              'Notes:\n• If inserts fail, ensure RLS is disabled for development or policies allow inserts.\n• Do not publish anon key publicly. Rotate keys if leaked.',
+              style: TextStyle(fontSize: 12),
             ),
           ],
         ),
