@@ -5,4 +5,4 @@ Oleh karena itu, Happbit dirancang sebagai pelacak harian all-in-one yang simpel
 
 ## Laporan
 
-[](https://docs.google.com/document/d/1TMlDd_gPIDpqzK57M5hv6BFlD-pfENoO2-HI0oNzCdg/edit?usp=sharing)
+[Berikut laporan terkait Final Project](https://docs.google.com/document/d/1TMlDd_gPIDpqzK57M5hv6BFlD-pfENoO2-HI0oNzCdg/edit?usp=sharing)
