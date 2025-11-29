@@ -1,16 +1,8 @@
 # happbit
 
-A new Flutter project.
+HappBit adalah partner digital untuk membangun rutinitas yang lebih sehat dan hidup yang lebih bahagia. Kami percaya kebiasaan kecil yang konsisten adalah kunci menuju kesejahteraan.
+Oleh karena itu, Happbit dirancang sebagai pelacak harian all-in-one yang simpel untuk memantau tiga pilar utama kesehatan Anda: mencatat pola makan, memonitor aktivitas olahraga, dan menganalisis kualitas tidur. 
 
-## Getting Started
+## Laporan
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+[](https://docs.google.com/document/d/1TMlDd_gPIDpqzK57M5hv6BFlD-pfENoO2-HI0oNzCdg/edit?usp=sharing)
