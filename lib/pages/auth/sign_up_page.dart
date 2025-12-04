@@ -12,7 +12,7 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final _nameCtrl = TextEditingController(); // <-- display name input
+  final _nameCtrl = TextEditingController();
   final _auth = AuthService();
   bool _loading = false;
 
@@ -26,42 +26,59 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _submit() async {
     setState(() => _loading = true);
+
     final email = _emailCtrl.text.trim();
     final pass = _passCtrl.text;
     final displayName = _nameCtrl.text.trim();
 
     if (email.isEmpty || pass.isEmpty || displayName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill name, email and password')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please fill name, email and password')));
       setState(() => _loading = false);
       return;
     }
 
     try {
       final user = await _auth.signUp(email, pass);
-      // If user is returned immediately, create profile with display_name + email
+
+      // ---------- async gap ends here ----------
+      if (!mounted) return;
+
       if (user != null) {
+        // Create profile row
         await Supabase.instance.client.from('profiles').upsert({
           'id': user.id,
           'display_name': displayName,
           'email': email,
           'timezone': 'Asia/Jakarta',
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed up and signed in.')));
+
+        // ---------- async gap ends here ----------
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Signed up and signed in.')));
         Navigator.of(context).pop();
       } else {
-        // No user returned -> likely email confirmation required
-        // We still create a profiles row tied to auth only AFTER the user confirms (or create a temporary row)
-        // Safer approach: create a profile row immediately using a random uuid? Avoid that — instead instruct user.
+        // Likely email confirmation required
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign up successful. Please check your email to confirm your account.')),
         );
-        // Optionally: try signInWithPassword here; many projects don't allow immediate sign-in before confirm.
+
+        // ---------- async gap ends here ----------
+        if (!mounted) return;
+
         Navigator.of(context).pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up error: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Sign up error: $e')));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -73,15 +90,27 @@ class _SignUpPageState extends State<SignUpPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Display name')),
+            TextField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(labelText: 'Display name'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+            TextField(
+              controller: _emailCtrl,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _passCtrl, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+            TextField(
+              controller: _passCtrl,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loading ? null : _submit,
-              child: _loading ? const CircularProgressIndicator() : const Text('Create account'),
+              child: _loading
+                  ? const CircularProgressIndicator()
+                  : const Text('Create account'),
             ),
           ],
         ),
