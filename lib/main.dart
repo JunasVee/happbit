@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = const Color.fromARGB(255, 123, 147, 255);
+    final color = const Color(0xFF7B9DFF);
     return MaterialApp(
       title: 'HappBit',
       debugShowCheckedModeBanner: false,
