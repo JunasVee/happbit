@@ -20,6 +20,8 @@ class _SignInPageState extends State<SignInPage> {
   bool _loading = false;
   bool _obscure = true;
 
+  String? _errorMessage; // NEW: inline error message
+
   @override
   void dispose() {
     _emailCtl.dispose();
@@ -28,30 +30,30 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Future<void> _submit() async {
+    setState(() => _errorMessage = null); // clear old errors
+
     final email = _emailCtl.text.trim();
     final password = _passCtl.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
+      setState(() => _errorMessage = "Please enter email and password.");
       return;
     }
 
     setState(() => _loading = true);
 
     try {
-      // Sign in using AuthService (throws on error)
+      // 🔐 Attempt login
       final user = await _auth.signIn(email, password);
 
-      // Fetch display_name if exists and then upsert to ensure email is present
-      final existingProfile = await _supabase
+      // Ensure profile exists and email is stored
+      final existing = await _supabase
           .from('profiles')
           .select('display_name')
           .eq('id', user.id)
           .maybeSingle();
 
-      final displayName = existingProfile?['display_name'] ?? '';
+      final displayName = existing?['display_name'] ?? '';
 
       await _supabase.from('profiles').upsert({
         'id': user.id,
@@ -60,17 +62,12 @@ class _SignInPageState extends State<SignInPage> {
         'timezone': 'Asia/Jakarta',
       });
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed in successfully.')));
-      // AuthGate listens to auth state and will route to MainNavigation automatically.
     } catch (e) {
       debugPrint("Sign-in error: $e");
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Sign in failed: $e')));
+
+      // ❗ Always generic message
+      setState(() => _errorMessage = "Invalid email or password.");
+
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -84,13 +81,11 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      // Keep AppBar minimal (optional)
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background image
+          // Background
           Positioned.fill(
             child: Image.asset(
               'assets/images/splash_bg.png',
@@ -98,7 +93,7 @@ class _SignInPageState extends State<SignInPage> {
             ),
           ),
 
-          // Form area (scrollable + centered)
+          // Content
           Positioned.fill(
             child: SafeArea(
               child: LayoutBuilder(
@@ -106,24 +101,20 @@ class _SignInPageState extends State<SignInPage> {
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
                       child: IntrinsicHeight(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Spacer top
                             const SizedBox(height: 30),
 
-                            // App title
+                            /// Title
                             Text(
                               'HappBit',
                               style: TextStyle(
                                 fontSize: 44,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
-                                letterSpacing: 0.6,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -136,14 +127,12 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             const SizedBox(height: 28),
 
-                            // Input fields container (no outer card) - fields float over background
+                            /// Inputs + Button
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Column(
                                 children: [
-                                  // Email
+                                  /// Email field
                                   _FloatingTextField(
                                     controller: _emailCtl,
                                     label: 'Email',
@@ -152,46 +141,44 @@ class _SignInPageState extends State<SignInPage> {
                                   ),
                                   const SizedBox(height: 14),
 
-                                  // Password
+                                  /// Password field
                                   _FloatingTextField(
                                     controller: _passCtl,
                                     label: 'Password',
-                                    prefix: const Icon(Icons.lock_outline),
                                     obscureText: _obscure,
+                                    prefix: const Icon(Icons.lock_outline),
                                     suffix: IconButton(
-                                      splashRadius: 18,
-                                      icon: Icon(
-                                        _obscure
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                      ),
+                                      icon: Icon(_obscure
+                                          ? Icons.visibility_off
+                                          : Icons.visibility),
                                       onPressed: () =>
                                           setState(() => _obscure = !_obscure),
                                     ),
                                   ),
+
+                                  /// INLINE ERROR MESSAGE (NEW)
+                                  if (_errorMessage != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+
                                   const SizedBox(height: 22),
 
-                                  // Sign In button (gradient)
+                                  /// Sign In button
                                   GradientButton(
-                                    text: _loading
-                                        ? 'Signing in...'
-                                        : 'Sign In',
-                                    height: 52,
-                                    onPressed: _loading ? null : _submit,
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF7B9DFF), // light blue
-                                        Color(0xFF5C7CFF), // deeper blue
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
+                                    text: _loading ? 'Signing in...' : 'Sign In',
                                     loading: _loading,
+                                    onPressed: _loading ? null : _submit,
                                   ),
 
                                   const SizedBox(height: 12),
 
-                                  // Sign up link
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -206,7 +193,6 @@ class _SignInPageState extends State<SignInPage> {
                               ),
                             ),
 
-                            // Spacer bottom (so content centers nicely)
                             const Spacer(),
                           ],
                         ),
@@ -223,16 +209,18 @@ class _SignInPageState extends State<SignInPage> {
   }
 }
 
-/// Floating outlined + filled text field widget (rounded)
+/// ------------------------------
+/// Floating text field widget
+/// ------------------------------
 class _FloatingTextField extends StatelessWidget {
   const _FloatingTextField({
+    super.key,
     required this.controller,
     required this.label,
     this.prefix,
     this.suffix,
     this.obscureText = false,
     this.keyboardType,
-    super.key,
   });
 
   final TextEditingController controller;
@@ -244,38 +232,31 @@ class _FloatingTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Slight shadow and rounded look to "float"
     return Material(
       elevation: 4,
       shadowColor: Colors.black12,
       borderRadius: BorderRadius.circular(14),
       child: TextField(
         controller: controller,
-        keyboardType: keyboardType,
         obscureText: obscureText,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
           filled: true,
           fillColor: Colors.white.withOpacity(0.95),
           prefixIcon: prefix,
           suffixIcon: suffix,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 16,
-            horizontal: 16,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            borderSide: BorderSide(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(14),
           ),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            borderSide: BorderSide(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(14),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF5C7CFF), width: 2),
             borderRadius: BorderRadius.circular(14),
           ),
         ),
@@ -284,40 +265,41 @@ class _FloatingTextField extends StatelessWidget {
   }
 }
 
-/// Gradient button with rounded corners
+/// ------------------------------
+/// Gradient Button
+/// ------------------------------
 class GradientButton extends StatelessWidget {
   const GradientButton({
+    super.key,
     required this.text,
     required this.onPressed,
-    required this.gradient,
-    this.height = 50,
+    this.height = 52,
     this.loading = false,
-    super.key,
   });
 
   final String text;
   final VoidCallback? onPressed;
-  final Gradient gradient;
   final double height;
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(12);
+    const radius = BorderRadius.all(Radius.circular(14));
+
     return SizedBox(
       width: double.infinity,
       height: height,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: gradient,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF7B9DFF),
+              Color(0xFF5C7CFF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: radius,
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.12),
-              offset: Offset(0, 6),
-              blurRadius: 12,
-            ),
-          ],
         ),
         child: ClipRRect(
           borderRadius: radius,
@@ -327,14 +309,8 @@ class GradientButton extends StatelessWidget {
               onTap: onPressed,
               child: Center(
                 child: loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
+                    ? const CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2)
                     : Text(
                         text,
                         style: const TextStyle(
