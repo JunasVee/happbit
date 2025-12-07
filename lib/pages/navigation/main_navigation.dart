@@ -24,26 +24,23 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-
+      backgroundColor: Colors.white,
       body: IndexedStack(
         index: _index,
         children: pages,
       ),
 
       // === Figma Bottom Navbar ===
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(32),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -65,15 +62,16 @@ class _MainNavigationState extends State<MainNavigation> {
     return GestureDetector(
       onTap: () => setState(() => _index = index),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(50),
+          shape: BoxShape.circle,
+          color: isActive ? const Color(0xFF4A90E2) : Colors.grey.shade300,
         ),
         child: Icon(
           icon,
-          size: 24,
-          color: isActive ? Colors.black : Colors.white.withValues(alpha: 0.7),
+          size: 22,
+          color: isActive ? Colors.white : Colors.black,
         ),
       ),
     );
