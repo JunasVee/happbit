@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
+import 'subscription_page.dart';
+import 'edit_profile_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -54,6 +56,17 @@ class _SettingsPageState extends State<SettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$feature coming soon')),
     );
+  }
+
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const EditProfilePage()),
+    );
+
+    // If EditProfilePage popped with "true", reload the name
+    if (updated == true) {
+      _loadProfile();
+    }
   }
 
   @override
@@ -114,11 +127,14 @@ class _SettingsPageState extends State<SettingsPage> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Icon(
-                              Icons.edit_outlined,
-                              size: 18,
-                              color: theme.textTheme.bodyMedium?.color,
-                            ),
+                            GestureDetector(
+                              onTap:_openEditProfile,
+                              child : Icon(
+                                Icons.edit_outlined,
+                                size: 18,
+                                color: theme.textTheme.bodyMedium?.color,
+                              ),
+                            )
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -192,7 +208,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: () => _showComingSoon(context, 'Premium'),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionPage(),
+                          ),
+                        );
+                      },
                       child: const Text('Go Premium'),
                     ),
                   ],

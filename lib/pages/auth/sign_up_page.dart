@@ -253,7 +253,6 @@ class _FloatingTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.onChanged,
-    super.key,
   });
 
   final TextEditingController controller;
