@@ -108,8 +108,12 @@ class _HomePageState extends State<HomePage> {
       },
     );
 
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.brightness == Brightness.dark
+        ? const Color(0xFF121212)
+        : const Color(0xFFF5F5F5),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())

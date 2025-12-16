@@ -23,8 +23,17 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final inactiveBg = theme.brightness == Brightness.dark
+      ? const Color(0xFF2A2A2A)
+      : Colors.grey.shade300;
+    
+    final inactiveIcon =
+      theme.brightness == Brightness.dark ? Colors.white : Colors.black;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
         index: _index,
         children: pages,
@@ -44,10 +53,30 @@ class _MainNavigationState extends State<MainNavigation> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _navItem(icon: Icons.home_filled, index: 0),
-                _navItem(icon: Icons.search_rounded, index: 1),
-                _navItem(icon: Icons.bar_chart_rounded, index: 2),
-                _navItem(icon: Icons.settings_rounded, index: 3),
+                _navItem(
+                  icon: Icons.home_filled,
+                  index: 0,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.search_rounded,
+                  index: 1,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.bar_chart_rounded,
+                  index: 2,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.settings_rounded,
+                  index: 3,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
               ],
             ),
           ),
@@ -56,7 +85,7 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _navItem({required IconData icon, required int index}) {
+  Widget _navItem({required IconData icon, required int index, required Color inactiveBg, required Color inactiveIcon}) {
     final isActive = _index == index;
 
     return GestureDetector(
@@ -66,12 +95,12 @@ class _MainNavigationState extends State<MainNavigation> {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isActive ? const Color(0xFF4A90E2) : Colors.grey.shade300,
+          color: isActive ? const Color(0xFF4A90E2) : inactiveBg,
         ),
         child: Icon(
           icon,
           size: 22,
-          color: isActive ? Colors.white : Colors.black,
+          color: isActive ? Colors.white : inactiveIcon,
         ),
       ),
     );
