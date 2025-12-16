@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import 'subscription_page.dart';
 import 'edit_profile_page.dart';
+import 'display_settings_page.dart';
+import 'privacy_lock_page.dart';
+import 'time_of_day_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -88,10 +91,18 @@ class _SettingsPageState extends State<SettingsPage> {
         : 'Your name';
 
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    
+        // Keep the original light style, but make it readable in dark mode.
+    final tileBg = theme.brightness == Brightness.dark
+        ? const Color(0xFF2A2A2A)
+        : Colors.grey.shade300;
+
+    final onTileText = theme.brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -224,7 +235,13 @@ class _SettingsPageState extends State<SettingsPage> {
               _SettingsTile(
                 icon: Icons.person_outline_rounded,
                 label: 'Free Account',
-                onTap: () => _showComingSoon(context, 'Account settings'),
+                onTap: () {
+                  Navigator.of(context).push(
+                  MaterialPageRoute(
+                  builder: (_) => const SubscriptionPage(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               Text(
@@ -243,24 +260,40 @@ class _SettingsPageState extends State<SettingsPage> {
               _SettingsTile(
                 icon: Icons.lock_outline_rounded,
                 label: 'Privacy Lock',
-                onTap: () => _showComingSoon(context, 'Privacy Lock'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PrivacyLockPage()),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               _SettingsTile(
                 icon: Icons.display_settings_rounded,
                 label: 'Display',
-                onTap: () => _showComingSoon(context, 'Display'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const DisplaySettingsPage(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               _SettingsTile(
                 icon: Icons.access_time_rounded,
                 label: 'Time of Day',
-                onTap: () => _showComingSoon(context, 'Time of Day'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TimeOfDayPage(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               _SettingsTile(
                 icon: Icons.logout_rounded,
                 label: 'Sign Out',
+                backgroundColor: tileBg,
                 color: theme.colorScheme.error,
                 onTap: () async {
                   await _auth.signOut();
@@ -287,12 +320,14 @@ class _SettingsTile extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final Color? color;
+  final Color? backgroundColor;
 
   const _SettingsTile({
     required this.icon,
     required this.label,
     this.onTap,
     this.color,
+    this.backgroundColor,
   });
 
   @override
