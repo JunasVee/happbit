@@ -20,7 +20,7 @@ class HabitTemplate {
   });
 }
 
-// preset habit – termasuk yang kamu minta + tambahan health habits
+// preset habit 
 const List<HabitTemplate> kHabitTemplates = [
   HabitTemplate(
     id: 'cardio',
@@ -94,8 +94,6 @@ const List<HabitTemplate> kHabitTemplates = [
     unit: 'kcal',
     defaultTarget: 2000,
   ),
-
-  // ✅ tambahan health habits yang sering ditrack
   HabitTemplate(
     id: 'sleep',
     name: 'Sleep',
@@ -138,6 +136,28 @@ const List<HabitTemplate> kHabitTemplates = [
   ),
 ];
 
+/// Palet warna yang bisa dipilih user
+const List<Color> kHabitColors = [
+  Color(0xFF4F7DF9), // biru
+  Color(0xFF33C07A), // hijau
+  Color(0xFFFF6B6B), // merah
+  Color(0xFFFFB347), // oranye
+  Color(0xFF9B6BFF), // ungu
+];
+
+Color defaultColorForCategory(String cat) {
+  switch (cat) {
+    case 'water':
+      return const Color(0xFF4F7DF9);
+    case 'sleep':
+      return const Color(0xFF33C07A);
+    case 'calories':
+      return const Color(0xFFFF6B6B);
+    default:
+      return const Color(0xFF4F7DF9);
+  }
+}
+
 class AddHabitPage extends StatefulWidget {
   final AuthService auth;
   final DataService data;
@@ -161,12 +181,16 @@ class _AddHabitPageState extends State<AddHabitPage> {
   late TextEditingController _targetController;
   bool _saving = false;
 
+  /// warna yang dipilih user (disimpan sebagai .value ke DB)
+  late Color _selectedColor;
+
   @override
   void initState() {
     super.initState();
     _selectedTemplate = kHabitTemplates.first;
-    _titleController =
-        TextEditingController(text: _selectedTemplate!.name);
+    _selectedColor = defaultColorForCategory(_selectedTemplate!.id);
+
+    _titleController = TextEditingController(text: _selectedTemplate!.name);
     _descriptionController = TextEditingController();
     _targetController =
         TextEditingController(text: _selectedTemplate!.defaultTarget.toString());
@@ -376,6 +400,50 @@ class _AddHabitPageState extends State<AddHabitPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
+
+                // === COLOR PICKER ===
+                const Text(
+                  'Color',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final c in kHabitColors)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedColor = c);
+                        },
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: c == _selectedColor
+                                  ? Colors.black
+                                  : Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: c == _selectedColor
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
                 Text(
                   'You can adjust the target anytime from the habit settings.',
                   style: TextStyle(
@@ -399,12 +467,16 @@ class _AddHabitPageState extends State<AddHabitPage> {
       onTap: () {
         setState(() {
           _selectedTemplate = template;
+
           // auto-update title kalau user belum mengubah manual
           if (_titleController.text.isEmpty ||
               _titleController.text == _selectedTemplate!.name) {
             _titleController.text = template.name;
           }
           _targetController.text = template.defaultTarget.toString();
+
+          // set default color berdasarkan kategori template
+          _selectedColor = defaultColorForCategory(template.id);
         });
       },
       child: AnimatedContainer(
@@ -432,8 +504,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color:
-                    isSelected ? Colors.white.withValues(alpha: 0.1) : Colors.grey[100],
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey[100],
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -500,6 +573,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
         category: _selectedTemplate!.id,
         dailyTarget: target,
         unit: _selectedTemplate!.unit,
+        color: _selectedColor.value, // ⬅️ kirim warna ke DB
       );
 
       if (!mounted) return;
