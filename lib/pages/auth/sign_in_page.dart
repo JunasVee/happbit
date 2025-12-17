@@ -61,13 +61,11 @@ class _SignInPageState extends State<SignInPage> {
         'display_name': displayName,
         'timezone': 'Asia/Jakarta',
       });
-
     } catch (e) {
       debugPrint("Sign-in error: $e");
 
       // ❗ Always generic message
       setState(() => _errorMessage = "Invalid email or password.");
-
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -101,7 +99,9 @@ class _SignInPageState extends State<SignInPage> {
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
                       child: IntrinsicHeight(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -129,10 +129,11 @@ class _SignInPageState extends State<SignInPage> {
 
                             /// Inputs + Button
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24.0,
+                              ),
                               child: Column(
                                 children: [
-                                  /// Email field
                                   _FloatingTextField(
                                     controller: _emailCtl,
                                     label: 'Email',
@@ -141,22 +142,22 @@ class _SignInPageState extends State<SignInPage> {
                                   ),
                                   const SizedBox(height: 14),
 
-                                  /// Password field
                                   _FloatingTextField(
                                     controller: _passCtl,
                                     label: 'Password',
                                     obscureText: _obscure,
                                     prefix: const Icon(Icons.lock_outline),
                                     suffix: IconButton(
-                                      icon: Icon(_obscure
-                                          ? Icons.visibility_off
-                                          : Icons.visibility),
+                                      icon: Icon(
+                                        _obscure
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                      ),
                                       onPressed: () =>
                                           setState(() => _obscure = !_obscure),
                                     ),
                                   ),
 
-                                  /// INLINE ERROR MESSAGE (NEW)
                                   if (_errorMessage != null) ...[
                                     const SizedBox(height: 8),
                                     Text(
@@ -170,9 +171,10 @@ class _SignInPageState extends State<SignInPage> {
 
                                   const SizedBox(height: 22),
 
-                                  /// Sign In button
                                   GradientButton(
-                                    text: _loading ? 'Signing in...' : 'Sign In',
+                                    text: _loading
+                                        ? 'Signing in...'
+                                        : 'Sign In',
                                     loading: _loading,
                                     onPressed: _loading ? null : _submit,
                                   ),
@@ -192,8 +194,6 @@ class _SignInPageState extends State<SignInPage> {
                                 ],
                               ),
                             ),
-
-                            const Spacer(),
                           ],
                         ),
                       ),
@@ -245,7 +245,10 @@ class _FloatingTextField extends StatelessWidget {
           fillColor: Colors.white.withOpacity(0.95),
           prefixIcon: prefix,
           suffixIcon: suffix,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16,
+            horizontal: 16,
+          ),
           border: OutlineInputBorder(
             borderSide: BorderSide(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(14),
@@ -291,10 +294,7 @@ class GradientButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF7B9DFF),
-              Color(0xFF5C7CFF),
-            ],
+            colors: [Color(0xFF7B9DFF), Color(0xFF5C7CFF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -309,7 +309,9 @@ class GradientButton extends StatelessWidget {
               child: Center(
                 child: loading
                     ? const CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2)
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      )
                     : Text(
                         text,
                         style: const TextStyle(
