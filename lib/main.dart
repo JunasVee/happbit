@@ -7,6 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Make sure this file exists: lib/widgets/auth_gate.dart
 import 'widgets/auth_gate.dart';
 
+// AnalyticsPage
+import 'pages/analytics/analytics_page.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -51,6 +54,7 @@ class MyApp extends StatelessWidget {
         // '/sign-in': (_) => const SignInPage(),
         // '/sign-up': (_) => const SignUpPage(),
         // '/home': (_) => const HomePage(),
+        '/analytics': (_) => const AnalyticsPage()
       },
     );
   }
