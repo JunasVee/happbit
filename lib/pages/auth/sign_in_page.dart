@@ -214,7 +214,6 @@ class _SignInPageState extends State<SignInPage> {
 /// ------------------------------
 class _FloatingTextField extends StatelessWidget {
   const _FloatingTextField({
-    super.key,
     required this.controller,
     required this.label,
     this.prefix,
