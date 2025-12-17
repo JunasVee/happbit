@@ -23,39 +23,85 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final inactiveBg = theme.brightness == Brightness.dark
+      ? const Color(0xFF2A2A2A)
+      : Colors.grey.shade300;
+    
+    final inactiveIcon =
+      theme.brightness == Brightness.dark ? Colors.white : Colors.black;
+    
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
         index: _index,
         children: pages,
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+      // === Figma Bottom Navbar ===
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _navItem(
+                  icon: Icons.home_filled,
+                  index: 0,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.search_rounded,
+                  index: 1,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.bar_chart_rounded,
+                  index: 2,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+                _navItem(
+                  icon: Icons.settings_rounded,
+                  index: 3,
+                  inactiveBg: inactiveBg,
+                  inactiveIcon: inactiveIcon,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-        type: BottomNavigationBarType.fixed,
+  Widget _navItem({required IconData icon, required int index, required Color inactiveBg, required Color inactiveIcon}) {
+    final isActive = _index == index;
 
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights_outlined),
-            activeIcon: Icon(Icons.insights),
-            label: 'Analytics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+    return GestureDetector(
+      onTap: () => setState(() => _index = index),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isActive ? const Color(0xFF4A90E2) : inactiveBg,
+        ),
+        child: Icon(
+          icon,
+          size: 22,
+          color: isActive ? Colors.white : inactiveIcon,
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'sign_up_page.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
+
   @override
   State<SignInPage> createState() => _SignInPageState();
 }
@@ -19,6 +20,8 @@ class _SignInPageState extends State<SignInPage> {
   bool _loading = false;
   bool _obscure = true;
 
+  String? _errorMessage; // NEW: inline error message
+
   @override
   void dispose() {
     _emailCtl.dispose();
@@ -27,58 +30,44 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Future<void> _submit() async {
+    setState(() => _errorMessage = null); // clear old errors
+
     final email = _emailCtl.text.trim();
     final password = _passCtl.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
+      setState(() => _errorMessage = "Please enter email and password.");
       return;
     }
 
     setState(() => _loading = true);
 
     try {
-      // Use AuthService to sign in (throws on error)
+      // 🔐 Attempt login
       final user = await _auth.signIn(email, password);
 
-      // Upsert profile so profiles.email is filled (and keep display_name if exists).
-      // We use a minimal upsert: set email, and keep existing display_name if present.
-      try {
-        // Fetch existing display_name (if any)
-        final existing = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', user.id)
-            .maybeSingle();
+      // Ensure profile exists and email is stored
+      final existing = await _supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .maybeSingle();
 
-        final displayName = existing?['display_name'] ?? '';
+      final displayName = existing?['display_name'] ?? '';
 
-        await _supabase.from('profiles').upsert({
-          'id': user.id,
-          'email': user.email,
-          'display_name': displayName,
-          'timezone': 'Asia/Jakarta',
-        });
-      } catch (profileErr) {
-        // Non-fatal: log for debugging but don't block sign-in
-        debugPrint(
-          'Warning: failed to upsert profile after sign-in: $profileErr',
-        );
-      }
+      await _supabase.from('profiles').upsert({
+        'id': user.id,
+        'email': user.email,
+        'display_name': displayName,
+        'timezone': 'Asia/Jakarta',
+      });
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed in successfully.')));
-      // AuthGate listens to auth state changes and will route to MainNavigation automatically.
     } catch (e) {
-      debugPrint('SignIn error: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Sign in failed: $e')));
+      debugPrint("Sign-in error: $e");
+
+      // ❗ Always generic message
+      setState(() => _errorMessage = "Invalid email or password.");
+
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -93,86 +82,245 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In'), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        child: Column(
-          children: [
-            // optional helpful text
-            Text(
-              'Welcome back — sign in to continue to HappBit',
-              style: Theme.of(context).textTheme.bodyMedium,
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/splash_bg.png',
+              fit: BoxFit.cover,
             ),
-            const SizedBox(height: 24),
+          ),
 
-            // Email
-            TextField(
-              controller: _emailCtl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-            ),
-            const SizedBox(height: 12),
+          // Content
+          Positioned.fill(
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 30),
 
-            // Password
-            TextField(
-              controller: _passCtl,
-              obscureText: _obscure,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscure ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+                            /// Title
+                            Text(
+                              'HappBit',
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Welcome back — sign in to continue',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
 
-            // Sign in button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                            /// Inputs + Button
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Column(
+                                children: [
+                                  /// Email field
+                                  _FloatingTextField(
+                                    controller: _emailCtl,
+                                    label: 'Email',
+                                    prefix: const Icon(Icons.email_outlined),
+                                    keyboardType: TextInputType.emailAddress,
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  /// Password field
+                                  _FloatingTextField(
+                                    controller: _passCtl,
+                                    label: 'Password',
+                                    obscureText: _obscure,
+                                    prefix: const Icon(Icons.lock_outline),
+                                    suffix: IconButton(
+                                      icon: Icon(_obscure
+                                          ? Icons.visibility_off
+                                          : Icons.visibility),
+                                      onPressed: () =>
+                                          setState(() => _obscure = !_obscure),
+                                    ),
+                                  ),
+
+                                  /// INLINE ERROR MESSAGE (NEW)
+                                  if (_errorMessage != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+
+                                  const SizedBox(height: 22),
+
+                                  /// Sign In button
+                                  GradientButton(
+                                    text: _loading ? 'Signing in...' : 'Sign In',
+                                    loading: _loading,
+                                    onPressed: _loading ? null : _submit,
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text("Don't have an account?"),
+                                      TextButton(
+                                        onPressed: _goToSignUp,
+                                        child: const Text('Sign Up'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const Spacer(),
+                          ],
                         ),
-                      )
-                    : const Text('Sign In'),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 12),
+/// ------------------------------
+/// Floating text field widget
+/// ------------------------------
+class _FloatingTextField extends StatelessWidget {
+  const _FloatingTextField({
+    required this.controller,
+    required this.label,
+    this.prefix,
+    this.suffix,
+    this.obscureText = false,
+    this.keyboardType,
+  });
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Don't have an account?"),
-                TextButton(
-                  onPressed: _goToSignUp,
-                  child: const Text('Sign Up'),
-                ),
-              ],
+  final TextEditingController controller;
+  final String label;
+  final Widget? prefix;
+  final Widget? suffix;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 4,
+      shadowColor: Colors.black12,
+      borderRadius: BorderRadius.circular(14),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.95),
+          prefixIcon: prefix,
+          suffixIcon: suffix,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color(0xFF5C7CFF), width: 2),
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ------------------------------
+/// Gradient Button
+/// ------------------------------
+class GradientButton extends StatelessWidget {
+  const GradientButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.height = 52,
+    this.loading = false,
+  });
+
+  final String text;
+  final VoidCallback? onPressed;
+  final double height;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(14));
+
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF7B9DFF),
+              Color(0xFF5C7CFF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: radius,
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              child: Center(
+                child: loading
+                    ? const CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2)
+                    : Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
             ),
-
-            const SizedBox(height: 18),
-
-            // Optional: quick seed/dummy login hint for dev
-            Text(
-              'Tip: For development you can use the "Generate Dummy Data" button in the app (Home) after signing in, or create users in Supabase dashboard.',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
     );

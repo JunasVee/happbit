@@ -21,11 +21,18 @@ class _DebugScreenState extends State<DebugScreen> {
     setState(() => _loading = true);
     try {
       await _auth.signUp(_emailCtl.text.trim(), _passCtl.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign up success — check email if required')));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign up success — check email if required')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('SignUp error: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('SignUp error: $e')),
+      );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -33,12 +40,21 @@ class _DebugScreenState extends State<DebugScreen> {
     setState(() => _loading = true);
     try {
       await _auth.signIn(_emailCtl.text.trim(), _passCtl.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signed in')));
-      setState(() {}); // refresh UI (current user)
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed in')),
+      );
+
+      // update UI
+      if (mounted) setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('SignIn error: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('SignIn error: $e')),
+      );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -50,14 +66,16 @@ class _DebugScreenState extends State<DebugScreen> {
 
       final uid = user.id;
 
-      // upsert profile
+      // Upsert profile
       await _client.from('profiles').upsert({
         'id': uid,
         'display_name': 'HappBit User',
         'timezone': 'Asia/Jakarta',
       });
 
-      // insert sample habit
+      if (!mounted) return;
+
+      // Insert sample habits
       final inserted = await _client.from('habits').insert([
         {
           'user_id': uid,
@@ -73,9 +91,11 @@ class _DebugScreenState extends State<DebugScreen> {
         },
       ]).select();
 
+      if (!mounted) return;
+
       final drinkWaterId = inserted[0]['id'] as String;
 
-      // insert one log and one reminder
+      // Insert one instance
       await _client.from('habit_instances').insert([
         {
           'habit_id': drinkWaterId,
@@ -84,6 +104,9 @@ class _DebugScreenState extends State<DebugScreen> {
         }
       ]);
 
+      if (!mounted) return;
+
+      // Insert reminder example
       await _client.from('reminders').insert([
         {
           'habit_id': drinkWaterId,
@@ -93,11 +116,18 @@ class _DebugScreenState extends State<DebugScreen> {
         }
       ]);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dummy data inserted')));
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dummy data inserted')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -120,21 +150,46 @@ class _DebugScreenState extends State<DebugScreen> {
         child: Column(
           children: [
             Text('Current user: $uid'),
-            TextField(controller: _emailCtl, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: _passCtl, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton(onPressed: _loading ? null : _signUp, child: const Text('Sign Up')),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _loading ? null : _signIn, child: const Text('Sign In')),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _loading ? null : _generateDummyData, child: const Text('Generate Dummy')),
-              ],
+            TextField(
+              controller: _emailCtl,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _passCtl,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
             ),
             const SizedBox(height: 12),
+
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _loading ? null : _signUp,
+                  child: const Text('Sign Up'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _loading ? null : _signIn,
+                  child: const Text('Sign In'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _loading ? null : _generateDummyData,
+                  child: const Text('Generate Dummy'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
             ElevatedButton(
-              onPressed: _loading ? null : () async { await _auth.signOut(); setState(() {}); },
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      await _auth.signOut();
+                      if (!mounted) return;
+                      setState(() {});
+                    },
               child: const Text('Sign Out'),
             ),
           ],
