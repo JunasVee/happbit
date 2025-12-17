@@ -144,185 +144,172 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF121212) : Colors.white;
+    final cs = theme.colorScheme;
+    final fill = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final border = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: bg,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        foregroundColor: cs.onBackground,
         title: const Text(
           'Edit Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          // same background asset you use on auth pages
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/splash_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: _initializing
-                    ? const SizedBox(
-                        height: 300,
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 8),
-                          Center(
-                            child: CircleAvatar(
-                              radius: 34,
-                              backgroundColor: Colors.black,
-                              child: Text(
-                                (_nameCtrl.text.isNotEmpty
-                                        ? _nameCtrl.text[0]
-                                        : 'A')
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Center(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: _initializing
+                  ? const SizedBox(
+                      height: 300,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 8),
+                        Center(
+                          child: CircleAvatar(
+                            radius: 34,
+                            backgroundColor: Colors.black,
                             child: Text(
-                              'Update your personal information',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.black54,
+                              (_nameCtrl.text.isNotEmpty
+                                      ? _nameCtrl.text[0]
+                                      : 'A')
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
-
-                          // Display name
-                          _ProfileTextField(
-                            controller: _nameCtrl,
-                            label: 'Display name',
-                            keyboardType: TextInputType.name,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Email (read-only for now)
-                          _ProfileTextField(
-                            controller: _emailCtrl,
-                            label: 'Email',
-                            prefix: const Icon(Icons.email_outlined),
-                            keyboardType: TextInputType.emailAddress,
-                            readOnly: true,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Timezone dropdown
-                          Text(
-                            'Time zone',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: Text(
+                            'Update your personal information',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Material(
-                            elevation: 4,
-                            shadowColor: Colors.black12,
-                            borderRadius: BorderRadius.circular(14),
-                            child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                ),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _timezones.contains(_timezone)
-                                      ? _timezone
-                                      : _timezones.first,
-                                  icon: const Icon(
-                                      Icons.expand_more_rounded),
-                                  items: _timezones
-                                      .map(
-                                        (tz) =>
-                                            DropdownMenuItem<String>(
-                                          value: tz,
-                                          child: Text(tz),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value == null) return;
-                                    setState(() {
-                                      _timezone = value;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 32),
+                        ),
+                        const SizedBox(height: 24),
 
-                          // Save button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              onPressed: _loading ? null : _save,
-                              child: _loading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                        // Display name
+                        _ProfileTextField(
+                          controller: _nameCtrl,
+                          label: 'Display name',
+                          keyboardType: TextInputType.name,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Email (read-only for now)
+                        _ProfileTextField(
+                          controller: _emailCtrl,
+                          label: 'Email',
+                          prefix: const Icon(Icons.email_outlined),
+                          keyboardType: TextInputType.emailAddress,
+                          readOnly: true,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Timezone dropdown
+                        Text(
+                          'Time zone',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Material(
+                          elevation: isDark ? 0 : 4,
+                          shadowColor: Colors.black12,
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: fill,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: border),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _timezones.contains(_timezone)
+                                    ? _timezone
+                                    : _timezones.first,
+                                style: TextStyle(color: theme.colorScheme.onSurface),
+                                iconEnabledColor: theme.colorScheme.onSurface,
+                                items: _timezones
+                                    .map(
+                                      (tz) =>
+                                          DropdownMenuItem<String>(
+                                        value: tz,
+                                        child: Text(tz),
                                       ),
                                     )
-                                  : const Text(
-                                      'Save changes',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                    .toList(),
+                                onChanged: (value) {
+                                  if (value == null) return;
+                                  setState(() {
+                                    _timezone = value;
+                                  });
+                                },
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-              ),
-            ),
-          ),
-        ],
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Save button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: _loading ? null : _save,
+                            child: _loading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Save changes',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                  ),
+        ),
       ),
     );
   }
@@ -345,8 +332,15 @@ class _ProfileTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final fill = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final border = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+    final labelColor = isDark ? Colors.grey.shade300 : Colors.black87;
+    
     return Material(
-      elevation: 4,
+      elevation: isDark ? 0 : 4,
       shadowColor: Colors.black12,
       borderRadius: BorderRadius.circular(14),
       child: TextField(
@@ -355,27 +349,28 @@ class _ProfileTextField extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: labelColor),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.95),
+          fillColor: fill,
           prefixIcon: prefix,
           contentPadding: const EdgeInsets.symmetric(
             vertical: 16,
             horizontal: 16,
           ),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: border),
             borderRadius: BorderRadius.circular(14),
           ),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: border),
             borderRadius: BorderRadius.circular(14),
           ),
-          focusedBorder: const OutlineInputBorder(
+          focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Color(0xFF5C7CFF),
+              color: theme.colorScheme.primary,
               width: 2,
             ),
-            borderRadius: BorderRadius.all(Radius.circular(14)),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),

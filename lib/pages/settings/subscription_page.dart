@@ -15,9 +15,12 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.brightness == Brightness.dark
+        ? const Color(0xFF121212)
+        : const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,8 +120,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
+                          backgroundColor: isDark ? Colors.white : Colors.black,
+                          foregroundColor: isDark? Colors.black : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -173,6 +176,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -210,6 +214,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         title,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.black87 : null,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -217,6 +222,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         subtitle,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.black : null,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -224,7 +230,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                         previousPrice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           decoration: TextDecoration.lineThrough,
-                          color: Colors.grey.shade600,
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade600,
                         ),
                       ),
                     ],
