@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../home/home_page.dart';
 import '../search/search_page.dart';
 import '../analytics/analytics_page.dart';
@@ -14,11 +16,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _index = 0;
 
-  final pages = const [
-    HomePage(),
-    SearchPage(),
-    AnalyticsPage(),
-    SettingsPage(),
+  late final pages = [
+    const HomePage(),
+    const SearchPage(),
+    AnalyticsPage(userId: Supabase.instance.client.auth.currentUser!.id), // ✅ filled in
+    const SettingsPage(),
   ];
 
   @override
@@ -26,12 +28,12 @@ class _MainNavigationState extends State<MainNavigation> {
     final theme = Theme.of(context);
 
     final inactiveBg = theme.brightness == Brightness.dark
-      ? const Color(0xFF2A2A2A)
-      : Colors.grey.shade300;
-    
+        ? const Color(0xFF2A2A2A)
+        : Colors.grey.shade300;
+
     final inactiveIcon =
-      theme.brightness == Brightness.dark ? Colors.white : Colors.black;
-    
+    theme.brightness == Brightness.dark ? Colors.white : Colors.black;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
@@ -85,7 +87,12 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _navItem({required IconData icon, required int index, required Color inactiveBg, required Color inactiveIcon}) {
+  Widget _navItem({
+    required IconData icon,
+    required int index,
+    required Color inactiveBg,
+    required Color inactiveIcon,
+  }) {
     final isActive = _index == index;
 
     return GestureDetector(
