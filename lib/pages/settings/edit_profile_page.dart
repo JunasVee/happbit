@@ -155,7 +155,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
-        foregroundColor: cs.onBackground,
+        foregroundColor: cs.onSurface,
         title: const Text(
           'Edit Profile',
           style: TextStyle(fontWeight: FontWeight.bold),

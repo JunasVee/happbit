@@ -278,7 +278,7 @@ class _HabitProgressTile extends StatelessWidget {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: percent,
-            backgroundColor: theme.colorScheme.surfaceVariant,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             color: theme.colorScheme.primary,
           ),
           const SizedBox(height: 4),

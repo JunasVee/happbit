@@ -40,8 +40,8 @@ dependencies:
   supabase_flutter: ^2.0.0
   flutter_dotenv: ^6.0.0
   shared_preferences: ^2.3.2
-  flutter_secure_storage: ^9.2.2
-  fl_chart: ^1.1.1
+  flutter_secure_storage: ^10.0.0
+  fl_chart: ^0.71.0
 
 dev_dependencies:
   flutter_test:
