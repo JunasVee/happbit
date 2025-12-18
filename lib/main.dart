@@ -26,7 +26,9 @@ Future<void> main() async {
   }
 
   // Optional debug prints (remove in production)
-  debugPrint('SUPABASE_URL=${supabaseUrl.substring(0, supabaseUrl.length.clamp(0, 60))}'); // short print
+  debugPrint(
+    'SUPABASE_URL=${supabaseUrl.substring(0, supabaseUrl.length.clamp(0, 60))}',
+  ); // short print
 
   // Initialize Supabase
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
@@ -43,11 +45,7 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({
-    super.key, 
-    required this.settings,
-    required this.lock,
-  });
+  const MyApp({super.key, required this.settings, required this.lock});
 
   final AppSettings settings;
   final AppLockController lock;
@@ -58,6 +56,7 @@ class MyApp extends StatelessWidget {
 
     final lightTheme = ThemeData(
       useMaterial3: true,
+      fontFamily: 'Poppins',
       colorScheme: ColorScheme.fromSeed(
         seedColor: color,
         brightness: Brightness.light,
@@ -67,13 +66,13 @@ class MyApp extends StatelessWidget {
 
     final darkTheme = ThemeData(
       useMaterial3: true,
+      fontFamily: 'Poppins',
       colorScheme: ColorScheme.fromSeed(
         seedColor: color,
         brightness: Brightness.dark,
       ),
       visualDensity: VisualDensity.adaptivePlatformDensity,
     );
-
 
     return AppControllers(
       settings: settings,
