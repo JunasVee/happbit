@@ -49,7 +49,7 @@ class DataService {
   /// CREATE HABIT
   ///
   /// Tambahan: [color] → simpan warna custom ke kolom `color` (INTEGER)
-  /// di tabel `habits` (misal format ARGB int dari Flutter).
+  /// di tabel `habits` 
   Future<void> createHabit({
     required String userId,
     required String title,
@@ -57,7 +57,7 @@ class DataService {
     String? description,
     int? dailyTarget,
     String? unit,
-    int? color, // <-- warna optional
+    int? color,
   }) async {
     await client.from('habits').insert({
       'user_id': userId,
@@ -78,7 +78,7 @@ class DataService {
     String? description,
     String? unit,
     String? category,
-    int? color, // update warna juga kalau ada
+    int? color, 
   }) async {
     final payload = <String, dynamic>{};
 
@@ -296,6 +296,22 @@ class DataService {
       final res =
           await q2.order('occured_at', ascending: ascending).limit(limit);
       return List<Map<String, dynamic>>.from(res as List);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchNews() async {
+  try {
+    // Pastikan nama tabel di Supabase kamu adalah 'news' atau 'articles'
+    // Di sini saya asumsikan nama tabelnya adalah 'news'
+    final response = await client
+        .from('news') 
+        .select('*')
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    print('Error fetching news: $e');
+    return []; // Kembalikan list kosong jika error agar aplikasi tidak crash
     }
   }
 

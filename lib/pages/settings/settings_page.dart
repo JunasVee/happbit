@@ -250,12 +250,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 12),
-              _SettingsTile(
-                icon: Icons.checklist_rounded,
-                label: 'Manage Habits',
-                onTap: () => _showComingSoon(context, 'Manage Habits'),
-              ),
               const SizedBox(height: 8),
               _SettingsTile(
                 icon: Icons.lock_outline_rounded,

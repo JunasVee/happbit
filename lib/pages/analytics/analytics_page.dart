@@ -63,9 +63,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final now = DateTime.now();
       final startDate = DateTime(now.year, now.month - 3, now.day);
       final heatmapMap = <DateTime, int>{};
-      final totals = <String, int>{}; // Inisialisasi di luar loop agar bisa menampung semua habit
+      final totals = <String, int>{}; 
       
-      // Ambil data instances untuk SEMUA habit agar heatmap & chart akurat
       for (var habit in habits) {
         final instances = await _dataService.fetchHabitInstances(
           habitId: habit['id'].toString(), 
@@ -78,11 +77,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         for (final inst in instances) {
           final date = DateTime.parse(inst['occured_at']).toLocal();
           
-          // Logic Heatmap (Total Intensitas Semua Habit)
           final dayOnly = DateTime(date.year, date.month, date.day);
           heatmapMap[dayOnly] = (heatmapMap[dayOnly] ?? 0) + 1;
 
-          // Logic Bar Chart (Hanya ambil yang masuk rentang 7 hari terakhir)
           if (date.isAfter(now.subtract(const Duration(days: 7)))) {
             final dayKey = date.weekday;
             totals['$dayKey'] = (totals['$dayKey'] ?? 0) + 1;
@@ -110,6 +107,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_habits.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Analytics')),
+        body: const Center(child: Text('No habits yet. Start tracking!')),
+      );
     }
 
     return Scaffold(
@@ -276,7 +280,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             defaultColor: Colors.grey.withOpacity(0.1),
             onClick: (DateTime date) {
               int count = _heatmapData[DateTime(date.year, date.month, date.day)] ?? 0;
-              ScaffoldMessenger.of(context).clearSnackBars(); // Bersihkan yang lama
+              ScaffoldMessenger.of(context).clearSnackBars();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text("On ${date.day}/${date.month}/${date.year}, you completed $count habits!"),
@@ -375,7 +379,7 @@ class _HabitProgressTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percent = (progress / total).clamp(0.0, 1.0);
+    final percent = (total > 0) ? (progress / total).clamp(0.0, 1.0) : 0.0;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
