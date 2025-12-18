@@ -38,15 +38,15 @@ happbit/
 # Cara Instalasi (Pengguna / Penguji)
 Untuk mencoba aplikasi HappBit secara langsung di perangkat Android tanpa harus melakukan kompilasi kode di laptop:
 
-Buka direktori documentation/release/ dalam repository ini.
+1. Buka direktori documentation/release/ dalam repository ini.
 
-Unduh file app-release.apk.
+2. Unduh file app-release.apk.
 
-Pindahkan file APK tersebut ke perangkat Android Anda.
+3. Pindahkan file APK tersebut ke perangkat Android Anda.
 
-Instal file tersebut (Berikan izin "Install from Unknown Sources" atau "Instal dari sumber tidak dikenal" jika diminta).
+4. Instal file tersebut (Berikan izin "Install from Unknown Sources" atau "Instal dari sumber tidak dikenal" jika diminta).
 
-Pastikan perangkat terhubung ke internet agar fitur Supabase berfungsi.
+5. Pastikan perangkat terhubung ke internet agar fitur Supabase berfungsi.
 
 # Panduan Developer (Menjalankan dari Source Code)
 1. Prasyarat
@@ -55,31 +55,22 @@ Instal Flutter SDK versi terbaru.
 Memiliki akun Supabase dan proyek yang sudah dikonfigurasi.
 
 2. Langkah Menjalankan
-Clone Repository:
-
-Bash
+  a. Clone Repository:
 
 git clone [https://github.com/username/happbit.git](https://github.com/username/happbit.git)
-Instal Dependensi:
-
-Bash
+  b. Instal Dependensi:
 
 flutter pub get
-Setup Environment: Buat file .env di folder root dan masukkan kredensial Supabase Anda (pastikan file .env sudah terdaftar di pubspec.yaml bagian assets):
-
-Cuplikan kode
+  c. Setup Environment: Buat file .env di folder root dan masukkan kredensial Supabase Anda (pastikan file .env sudah terdaftar di pubspec.yaml bagian assets):
 
 SUPABASE_URL=[https://your-project-url.supabase.co](https://your-project-url.supabase.co)
 SUPABASE_ANON_KEY=your-anon-key
-Jalankan Aplikasi:
-
-Bash
+  d. Jalankan Aplikasi:
 
 flutter run
+
 3. Cara Build APK (Rilis)
 Jika Anda ingin melakukan build ulang file APK:
-
-Bash
 
 flutter build apk --split-per-abi
 File hasil build akan berada di build/app/outputs/flutter-apk/.
