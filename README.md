@@ -55,16 +55,20 @@ Instal Flutter SDK versi terbaru.
 Memiliki akun Supabase dan proyek yang sudah dikonfigurasi.
 
 2. Langkah Menjalankan
+
 a. Clone Repository:
 
 git clone [https://github.com/username/happbit.git](https://github.com/username/happbit.git)
+
 b. Instal Dependensi:
 
 flutter pub get
+
 c. Setup Environment: Buat file .env di folder root dan masukkan kredensial Supabase Anda (pastikan file .env sudah terdaftar di pubspec.yaml bagian assets):
 
 SUPABASE_URL=[https://your-project-url.supabase.co](https://your-project-url.supabase.co)
 SUPABASE_ANON_KEY=your-anon-key
+
 d. Jalankan Aplikasi:
 
 flutter run
