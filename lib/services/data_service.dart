@@ -346,4 +346,43 @@ class DataService {
         .gte('occured_at', fromUtc.toIso8601String())
         .lt('occured_at', toUtc.toIso8601String());
   }
+
+  Future<Map<String, dynamic>> getWeeklySummary(String habitId, String userId) async {
+    final now = DateTime.now().toUtc();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final res = await fetchHabitInstances(
+      habitId: habitId,
+      userId: userId,
+      fromUtc: startOfWeek,
+      toUtc: now,
+      limit: 200,
+      ascending: true,
+    );
+    // Aggregate per day
+    final totals = <String, double>{};
+    for (final inst in res) {
+      final dayKey = DateFormat('yyyy-MM-dd').format(DateTime.parse(inst['occured_at']).toLocal());
+      totals[dayKey] = (totals[dayKey] ?? 0) + (inst['value'] ?? 1.0);
+    }
+    return {'totals': totals};
+  }
+
+  Future<Map<String, int>> getWeeklyCompletion(String habitId, String userId) async {
+    final now = DateTime.now().toUtc();
+    final start = now.subtract(Duration(days: 6));
+    final instances = await fetchHabitInstances(
+      habitId: habitId,
+      userId: userId,
+      fromUtc: start,
+      toUtc: now,
+      ascending: true,
+    );
+
+    final totals = <String, int>{};
+    for (final inst in instances) {
+      final dayKey = DateFormat('yyyy-MM-dd').format(DateTime.parse(inst['occured_at']).toLocal());
+      totals[dayKey] = (totals[dayKey] ?? 0) + 1;
+    }
+    return totals;
+  }
 }
